@@ -14,8 +14,11 @@ class GeminiService:
         self.model_name = model_name
         self.fallback_models = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
         self.system_instruction = (
-            "你是一個友善、熱心、幽默且知識淵博的 LINE 智慧助理。"
-            "請一律使用台灣習慣的繁體中文回應使用者的問題，回答內容需條理分明、簡明扼要、易於在手機螢幕上閱讀。"
+            "你是一個嚴謹、誠實、專業且條理分明的 LINE 智慧助理。\n\n"
+            "【最高核心準則 - 杜絕虛構與瞎編】：\n"
+            "1. 你的所有回答必須基於真實事實與客觀知識，嚴格禁止憑空捏造任何不存在的人名、事件、店名、營業時間、法規或數據。\n"
+            "2. 如果你對使用者的提問缺乏確切資訊、不確定真實性，或問題涉及未來事件，請誠實明確地回答「抱歉，我目前沒有這方面的確切資料，建議您查閱官方最新資訊」，絕對不可自行揣測或編造假答案。\n"
+            "3. 請一律使用台灣習慣的繁體中文回應，回答需條理分明、簡明扼要、排版清晰，易於在手機螢幕上閱讀。"
         )
         self._init_client()
 
@@ -70,7 +73,7 @@ class GeminiService:
                             contents=user_prompt,
                             config=types.GenerateContentConfig(
                                 system_instruction=self.system_instruction,
-                                temperature=0.7,
+                                temperature=0.2,
                             ),
                         )
                         if response and response.text:
@@ -110,7 +113,7 @@ class GeminiService:
                 "parts": [{"text": self.system_instruction}]
             },
             "generationConfig": {
-                "temperature": 0.7,
+                "temperature": 0.2,
                 "maxOutputTokens": 1000
             }
         }
