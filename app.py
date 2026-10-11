@@ -31,7 +31,10 @@ try:
         ApiClient,
         MessagingApi,
         ReplyMessageRequest,
-        TextMessage
+        TextMessage,
+        QuickReply,
+        QuickReplyButton,
+        MessageAction
     )
     from linebot.v3.webhooks import (
         MessageEvent,
@@ -142,10 +145,37 @@ if LINE_SDK_AVAILABLE and handler:
         # 透過 LINE Messaging API 送出回覆
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
+            # Generate follow‑up suggestions based on the AI answer
+            def generate_followup_questions(answer: str) -> list[str]:
+                """Ask Gemini for three possible next user questions."""
+                followup_prompt = (
+                    f"根據以下 AI 回答，請提供三個使用者可能會想進一步詢問的問題，"
+                    f"每個問題獨立一行，保持簡短（10–15 個字內）。"
+                    f"只列出問題，不需要說明。\n---\n{answer}"
+                )
+                try:
+                    suggestions = gemini_service.generate_response(followup_prompt)
+                    questions = [line.strip() for line in suggestions.splitlines() if line.strip()]
+                    return questions[:3]
+                except Exception as e:
+                    app.logger.error(f"Failed to generate follow‑up questions: {e}")
+                    return []
+
+            followup_questions = generate_followup_questions(ai_reply)
+            if followup_questions:
+                quick_reply_items = [
+                    QuickReplyButton(action=MessageAction(label=q, text=q))
+                    for q in followup_questions
+                ]
+                quick_reply = QuickReply(items=quick_reply_items)
+                messages = [TextMessage(text=ai_reply, quick_reply=quick_reply)]
+            else:
+                messages = [TextMessage(text=ai_reply)]
+
             line_bot_api.reply_message_with_http_info(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=ai_reply)]
+                    messages=messages
                 )
             )
 
