@@ -33,7 +33,7 @@ try:
         ReplyMessageRequest,
         TextMessage,
         QuickReply,
-        QuickReplyButton,
+        QuickReplyItem,
         MessageAction
     )
     from linebot.v3.webhooks import (
@@ -145,32 +145,39 @@ if LINE_SDK_AVAILABLE and handler:
         # 透過 LINE Messaging API 送出回覆
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
-            # Generate follow‑up suggestions based on the AI answer
+            # 根據 AI 回覆內容產生推薦的後續問題按鈕
             def generate_followup_questions(answer: str) -> list[str]:
-                """Ask Gemini for three possible next user questions."""
+                """請 Gemini 根據答案產生三個使用者可能會想問的後續問題"""
                 followup_prompt = (
-                    f"根據以下 AI 回答，請提供三個使用者可能會想進一步詢問的問題，"
-                    f"每個問題獨立一行，保持簡短（10–15 個字內）。"
-                    f"只列出問題，不需要說明。\n---\n{answer}"
+                    f"請根據以下回答，列出 3 個使用者最可能想繼續追問的問題。\n"
+                    f"要求：\n"
+                    f"1. 每個問題獨立一行\n"
+                    f"2. 問題長度請控制在 15 字以內\n"
+                    f"3. 只要輸出這 3 個問題，不要有編號、前綴引言或額外說明\n"
+                    f"---\n{answer[:500]}"
                 )
                 try:
                     suggestions = gemini_service.generate_response(followup_prompt)
-                    questions = [line.strip() for line in suggestions.splitlines() if line.strip()]
-                    return questions[:3]
+                    raw_lines = [line.strip().lstrip("0123456789.-、 ") for line in suggestions.splitlines() if line.strip()]
+                    cleaned = [q for q in raw_lines if q]
+                    return cleaned[:3]
                 except Exception as e:
-                    app.logger.error(f"Failed to generate follow‑up questions: {e}")
+                    print(f"⚠️ 產生後續問題失敗: {e}")
                     return []
 
             followup_questions = generate_followup_questions(ai_reply)
+            quick_reply = None
             if followup_questions:
-                quick_reply_items = [
-                    QuickReplyButton(action=MessageAction(label=q, text=q))
-                    for q in followup_questions
-                ]
+                quick_reply_items = []
+                for q in followup_questions:
+                    # LINE QuickReply label 上限為 20 字元
+                    label_text = q[:20]
+                    quick_reply_items.append(
+                        QuickReplyItem(action=MessageAction(label=label_text, text=q))
+                    )
                 quick_reply = QuickReply(items=quick_reply_items)
-                messages = [TextMessage(text=ai_reply, quick_reply=quick_reply)]
-            else:
-                messages = [TextMessage(text=ai_reply)]
+
+            messages = [TextMessage(text=ai_reply, quick_reply=quick_reply)]
 
             line_bot_api.reply_message_with_http_info(
                 ReplyMessageRequest(
