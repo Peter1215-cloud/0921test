@@ -165,49 +165,52 @@ function callGeminiWithQuickReplies(userMessage, apiKey) {
     }
   };
 
-  // 優先使用 gemini-1.5-flash，具備極佳回應速度與結構化輸出支援
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // 支援的模型清單（依序嘗試，確保高可用性）
+  const candidateModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'];
 
-  const options = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
+  for (let m = 0; m < candidateModels.length; m++) {
+    const modelName = candidateModels[m];
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-  try {
-    const response = UrlFetchApp.fetch(apiUrl, options);
-    const responseCode = response.getResponseCode();
-    const responseText = response.getContentText();
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
 
-    if (responseCode === 200) {
-      const resData = JSON.parse(responseText);
-      const candidates = resData.candidates || [];
-      if (candidates.length > 0 && candidates[0].content && candidates[0].content.parts.length > 0) {
-        const rawJsonText = candidates[0].content.parts[0].text;
-        try {
-          const parsed = JSON.parse(rawJsonText);
-          return {
-            reply: parsed.reply || '沒有內容',
-            followup_questions: Array.isArray(parsed.followup_questions) ? parsed.followup_questions.slice(0, 3) : []
-          };
-        } catch (e) {
-          // 若 JSON 解析異常，以原始文字退回
-          return {
-            reply: rawJsonText,
-            followup_questions: []
-          };
+    try {
+      const response = UrlFetchApp.fetch(apiUrl, options);
+      const responseCode = response.getResponseCode();
+      const responseText = response.getContentText();
+
+      if (responseCode === 200) {
+        const resData = JSON.parse(responseText);
+        const candidates = resData.candidates || [];
+        if (candidates.length > 0 && candidates[0].content && candidates[0].content.parts.length > 0) {
+          const rawJsonText = candidates[0].content.parts[0].text;
+          try {
+            const parsed = JSON.parse(rawJsonText);
+            return {
+              reply: parsed.reply || '沒有內容',
+              followup_questions: Array.isArray(parsed.followup_questions) ? parsed.followup_questions.slice(0, 3) : []
+            };
+          } catch (e) {
+            return {
+              reply: rawJsonText,
+              followup_questions: []
+            };
+          }
         }
+      } else {
+        console.warn(`[${modelName}] API 回應 HTTP ${responseCode}，嘗試下一個備援模型...`);
       }
-      return { reply: '無法取得 AI 回覆內容。', followup_questions: [] };
-    } else {
-      console.error(`Gemini API 錯誤 (${responseCode}): ${responseText}`);
-      return { reply: `❌ AI 服務暫時無法回應 (HTTP ${responseCode})，請稍後再試。`, followup_questions: [] };
+    } catch (err) {
+      console.warn(`[${modelName}] 連線異常: ` + err.toString());
     }
-  } catch (err) {
-    console.error('呼叫 Gemini 發生例外: ' + err.toString());
-    return { reply: '❌ 系統處理時發生異常，請稍後重試。', followup_questions: [] };
   }
+
+  return { reply: '❌ AI 服務暫時無法回應，請稍後再試。', followup_questions: [] };
 }
 
 /**
