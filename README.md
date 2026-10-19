@@ -1,13 +1,17 @@
 # 🤖 LINE Bot 串接免費 Google Gemini AI
 
-這是一個使用 **Python Flask** 開發的 LINE 智慧問答機器人，後端串接 Google 官方最新、完全免費的 **Gemini AI (Gemini 2.5 Flash / 1.5 Flash)**。使用者在 LINE 聊天室中發問，AI 即會透過繁體中文以極快的速度解答！
+這是一個支援 **雙部署模式** 的 LINE 智慧問答機器人，串接 Google 最新、完全免費的 **Gemini AI (Gemini 1.5 Flash / 2.5 Flash)**。使用者在 LINE 聊天室中發問，AI 即會透過繁體中文以極快的速度解答，並在回答下方自動附上 **3 個智慧推薦延伸問題按鈕**！
+
+### 🚀 支援兩種部署方式：
+1. **Google Apps Script (GAS) 雲端常駐（最推薦）**：7x24 小時永久免費免開電腦，固定 HTTPS 網址，零伺服器維護成本！👉 請參考 [GAS 部署教學指引](gas/README.md)
+2. **Python Flask + Cloudflare Tunnel 本機開發**：適合在本機端測試、除錯與客製化擴充。
 
 ---
 
 ## 🌟 費用說明 (100% 免費)
 - **Google Gemini API**：[Google AI Studio](https://aistudio.google.com/) 提供免費額度（每分鐘 15 次請求、每日 1,500 次），**無需綁定信用卡**。
 - **LINE Messaging API**：LINE 官方帳號的「**回覆訊息 (Reply API)**」完全免費且不限額度（不佔用每月 200 則的發訊額度）。
-- **測試工具**：Python、Flask 與 ngrok 皆提供免費方案。
+- **Google Apps Script**：Google 官方完全免費提供執行環境。
 
 ---
 
@@ -15,13 +19,18 @@
 
 ```
 0921test/
-├── app.py              # Flask Webhook 主伺服器
-├── ai_service.py       # Google Gemini AI 調用模組
-├── test_bot.py         # 單元測試腳本
-├── requirements.txt    # 相依套件清單
-├── .env.example        # 環境變數設定範本
-├── .gitignore          # Git 忽略設定
-└── README.md           # 完整使用說明書
+├── gas/                    # Google Apps Script 雲端常駐版 (推薦 🌟)
+│   ├── Code.gs             # GAS 核心處理程式碼 (方案 A: 單次請求 JSON 模式)
+│   └── README.md           # GAS 部署步驟教學
+├── app.py                  # 本機 Flask Webhook 主伺服器
+├── ai_service.py           # Google Gemini AI 調用模組 (含防幻覺機制)
+├── start_bot.bat           # Windows 一鍵啟動腳本 (Flask + Cloudflare Tunnel)
+├── test_bot.py             # 單元測試腳本
+├── requirements.txt        # Python 相依套件清單
+├── .env.example            # 環境變數設定範本
+├── .gitignore              # Git 忽略設定
+├── Project_Overview.pptx   # 專案五頁簡報檔
+└── README.md               # 專案說明書
 ```
 
 ---
