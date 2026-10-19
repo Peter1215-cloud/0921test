@@ -122,7 +122,44 @@ function verifySignature(bodyString, signature, channelSecret) {
 }
 
 /**
- * 呼叫 Google Gemini REST API（方案 A：一次取得主回答 + 3 個延伸推薦問題）
+ * 即時連網搜尋：透過 Google 即時新聞與時事檢索抓取網路最新資料（100% 免費無額度限制）
+ */
+function fetchRealtimeWebData(query) {
+  try {
+    const encodedQuery = encodeURIComponent(query);
+    const feedUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+    const res = UrlFetchApp.fetch(feedUrl, { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return '';
+
+    const xml = res.getContentText();
+    const document = XmlService.parse(xml);
+    const root = document.getRootElement();
+    const channel = root.getChild('channel');
+    if (!channel) return '';
+
+    const items = channel.getChildren('item');
+    if (!items || items.length === 0) return '';
+
+    let snippets = [];
+    const maxItems = Math.min(items.length, 4);
+    for (let i = 0; i < maxItems; i++) {
+      const item = items[i];
+      const title = item.getChildText('title') || '';
+      const pubDate = item.getChildText('pubDate') || '';
+      if (title) {
+        snippets.push(`- 【最新即時報導】${title} (發布時間: ${pubDate})`);
+      }
+    }
+
+    return snippets.join('\n');
+  } catch (e) {
+    console.warn('即時搜尋檢索失敗: ' + e.toString());
+    return '';
+  }
+}
+
+/**
+ * 呼叫 Google Gemini REST API（方案 A：一次取得主回答 + 3 個延伸推薦問題，支援即時連網）
  */
 function callGeminiWithQuickReplies(userMessage, apiKey) {
   if (!apiKey) {
@@ -135,6 +172,13 @@ function callGeminiWithQuickReplies(userMessage, apiKey) {
   // 取得現在時間供防幻覺時間錨定
   const now = new Date();
   const currentDate = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy年MM月dd日');
+
+  // 即時連網抓取最新資料
+  const webContext = fetchRealtimeWebData(userMessage);
+  let promptWithWeb = userMessage;
+  if (webContext) {
+    promptWithWeb = `【聯網即時檢索到的最新資料】：\n${webContext}\n\n【使用者提問】：\n${userMessage}`;
+  }
 
   const systemInstruction = 
     `你是一個嚴謹、誠實、條理分明的 LINE 智慧助理。今天是 ${currentDate}。\n\n` +
@@ -153,7 +197,7 @@ function callGeminiWithQuickReplies(userMessage, apiKey) {
   const payload = {
     contents: [
       {
-        parts: [{ text: userMessage }]
+        parts: [{ text: promptWithWeb }]
       }
     ],
     systemInstruction: {
