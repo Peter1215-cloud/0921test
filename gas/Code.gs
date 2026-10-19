@@ -25,6 +25,14 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    const requestData = JSON.parse(e.postData.contents);
+    const events = requestData.events || [];
+
+    // 若為 LINE Developers 的 Verify 測試請求（events 為空），直接回傳 200 OK
+    if (events.length === 0) {
+      return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+    }
+
     const channelSecret = getEnv('LINE_CHANNEL_SECRET');
     const channelAccessToken = getEnv('LINE_CHANNEL_ACCESS_TOKEN');
     const geminiApiKey = getEnv('GEMINI_API_KEY');
@@ -37,9 +45,6 @@ function doPost(e) {
         return ContentService.createTextOutput('Invalid signature').setMimeType(ContentService.MimeType.TEXT);
       }
     }
-
-    const requestData = JSON.parse(e.postData.contents);
-    const events = requestData.events || [];
 
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
