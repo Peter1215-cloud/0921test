@@ -84,6 +84,9 @@ def search_and_answer():
     # 1. 本地聯網搜尋
     search_items = search_web(query, max_results=4)
 
+    from datetime import datetime
+    current_date = datetime.now().strftime("%Y年%m月%d日")
+
     # 2. 組合提示詞
     if search_items:
         context_str = "\n".join([
@@ -91,18 +94,18 @@ def search_and_answer():
             for item in search_items
         ])
         prompt = (
-            f"你是一個客觀、誠實且專業的繁體中文智慧助理。\n"
+            f"你是一個客觀、誠實且專業的繁體中文智慧助理。請注意：現在的正確日期是【{current_date}】。\n"
             f"以下是聯網檢索到的最新參考資料：\n{context_str}\n\n"
             f"請根據上述資料與你的客觀知識，針對問題：「{query}」進行條理分明、繁體中文的解答。\n"
             f"要求：\n"
-            f"1. 回答要簡明扼要、切中重點。\n"
-            f"2. 務必客觀真實，切勿瞎編。"
+            f"1. 關於日期或時間，請嚴格以現在正確日期（{current_date}）為基準，不得臆造其他日期。\n"
+            f"2. 回答要簡明扼要、切中重點、客觀真實。"
         )
     else:
         prompt = (
-            f"你是一個客觀、誠實且專業的繁體中文智慧助理。\n"
+            f"你是一個客觀、誠實且專業的繁體中文智慧助理。請注意：現在的正確日期是【{current_date}】。\n"
             f"請針對問題：「{query}」以繁體中文條理分明地進行解答。\n"
-            f"若該問題涉及未知資訊請客觀說明。"
+            f"若問題涉及日期或時間，請嚴格以【{current_date}】為準；若涉及未知資訊請客觀說明。"
         )
 
     print(f"🤖 正在使用本地模型 ({LOCAL_MODEL}) 生成解答...")
