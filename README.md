@@ -4,7 +4,7 @@
 - Python 3、Ollama，`ollama pull gemma4:e2b`
 
 ## 怎麼跑
-- 模擬模式：`python line_bot_lite.py --simulate` ， `apps script`
+- 模擬模式：`python line_bot_lite.py --simulate` ， apps script
 
 
 ## 我改了什麼、跑起來怎樣
