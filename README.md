@@ -1,4 +1,4 @@
-# LINE bot 輕量版（和 AI 一起寫程式 W6 回家作業）
+# LINE bot 輕量版（和 AI 一起寫程式 W7 回家作業）
 
 ## 怎麼裝
 - Python 3、Ollama，`ollama pull gemma4:e2b`
