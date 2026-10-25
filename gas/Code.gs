@@ -243,3 +243,15 @@ function verifySignature(bodyString, signature, channelSecret) {
   const expectedSignature = Utilities.base64Encode(expectedHash);
   return signature === expectedSignature;
 }
+
+/**
+ * 快速手動授權與測試試算表寫入
+ * （請在 GAS 編輯器上方選擇此函式，並點擊一次「執行 ▶️」即可完成授權）
+ */
+function testSheetAuth() {
+  const now = new Date();
+  const timeStr = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss');
+  const result = appendTodoToSheet(SPREADSHEET_ID, '手動測試', '這是一筆手動授權測試待辦');
+  console.log('測試寫入結果: ' + JSON.stringify(result));
+}
+
