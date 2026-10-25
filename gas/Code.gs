@@ -1,19 +1,24 @@
 /**
  * ============================================================
- * LINE Bot x Google Gemini AI (Google Apps Script 版本)
+ * LINE Bot x Google Apps Script (混合雲 + 本機模型架構)
  * ============================================================
- * 功能特色：
- * 1. 7x24 小時免費雲端執行，免開電腦、免本機 Tunnel
- * 2. 採用方案 A：單次 Gemini 請求同時產出主回答與 3 個延伸推薦問題
- * 3. 嚴格防幻覺機制 (溫度 0.2 + 誠實查核系統提示詞)
- * 4. 金鑰保存在「指令碼屬性 (Script Properties)」，安全不外洩
+ * 核心功能：
+ * 1. 訊息開頭為「查 ...」：
+ *    ➔ 轉發給跑在您本機電腦上的本地模型 (Ollama + 聯網搜尋)
+ *    ➔ 回傳條理分明的解答並【附上參考來源】
+ * 2. 其他任何一般訊息：
+ *    ➔ 自動記入您的 Google 試算表 (待辦清單：時間、發送者、內容)
+ *    ➔ LINE 秒回「✅ 已為您記入待辦事項：...」
  * ============================================================
  */
 
-// 從指令碼屬性 (Script Properties) 取得敏感金鑰
+// 從指令碼屬性 (Script Properties) 取得環境設定
 function getEnv(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
 }
+
+// 您的 Google 試算表 ID
+const SPREADSHEET_ID = getEnv('SPREADSHEET_ID') || '1SjhS3ydHQgqLSFAL0020NupwkZjGrV4of_-4Uaf50ko';
 
 /**
  * Webhook 入口點：處理 LINE 發送過來的 POST 請求
@@ -35,9 +40,9 @@ function doPost(e) {
 
     const channelSecret = getEnv('LINE_CHANNEL_SECRET');
     const channelAccessToken = getEnv('LINE_CHANNEL_ACCESS_TOKEN');
-    const geminiApiKey = getEnv('GEMINI_API_KEY');
+    const localServerUrl = getEnv('LOCAL_SERVER_URL'); // 本機 Cloudflare Tunnel 網址
 
-    // 簽章驗證（若有設定 CHANNEL_SECRET 則驗證）
+    // 數位簽章驗證
     if (channelSecret) {
       const signature = e.headers ? (e.headers['X-Line-Signature'] || e.headers['x-line-signature']) : null;
       if (signature && !verifySignature(e.postData.contents, signature, channelSecret)) {
@@ -51,17 +56,31 @@ function doPost(e) {
 
       // 只處理文字訊息事件
       if (event.type === 'message' && event.message && event.message.type === 'text') {
-        const userMessage = event.message.text.trim();
+        const userText = event.message.text.trim();
         const replyToken = event.replyToken;
+        const userId = (event.source && event.source.userId) ? event.source.userId : 'unknown';
 
-        console.log('📩 [收到使用者提問]: ' + userMessage);
+        console.log('📩 [收到使用者訊息]: ' + userText);
 
-        // 呼叫 Gemini AI (單次請求同時產出主回答與追問建議)
-        const aiResult = callGeminiWithQuickReplies(userMessage, geminiApiKey);
-        console.log('🤖 [Gemini 回應完成]: ' + (aiResult.reply ? aiResult.reply.substring(0, 50) + '...' : ''));
+        // 分流判斷：是否以「查」開頭
+        if (userText.startsWith('查') || userText.startsWith('查 ') || userText.startsWith('搜尋') || userText.startsWith('搜尋 ')) {
+          // 取出「查」後面的關鍵字
+          const query = userText.replace(/^(查|搜尋)\s*/, '').trim();
 
-        // 回傳給 LINE 使用者
-        sendLineReply(replyToken, aiResult.reply, aiResult.followup_questions, channelAccessToken);
+          if (!query) {
+            sendSimpleReply(replyToken, '請問您想查詢什麼呢？請輸入「查 [欲查詢內容]」，例如：「查 東華大學 陳文盛教授」。', channelAccessToken);
+          } else {
+            // 轉發給本機電腦的本地模型進行聯網搜尋與回答
+            const searchReply = queryLocalServer(query, localServerUrl);
+            sendSimpleReply(replyToken, searchReply, channelAccessToken);
+          }
+
+        } else {
+          // 其他一般訊息 ➔ 記錄到 Google 試算表待辦清單
+          const todoResult = appendTodoToSheet(SPREADSHEET_ID, userId, userText);
+          const replyText = `✅ 已為您記入待辦事項！\n\n📌 內容：${userText}\n🕒 時間：${todoResult.time}`;
+          sendSimpleReply(replyToken, replyText, channelAccessToken);
+        }
       }
     }
 
@@ -81,17 +100,17 @@ function doPost(e) {
 function doGet(e) {
   const secretSet = !!getEnv('LINE_CHANNEL_SECRET');
   const tokenSet = !!getEnv('LINE_CHANNEL_ACCESS_TOKEN');
-  const geminiSet = !!getEnv('GEMINI_API_KEY');
+  const localSet = !!getEnv('LOCAL_SERVER_URL');
 
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title>LINE Bot x Gemini GAS 狀態</title>
+        <title>LINE Bot 混合雲狀態</title>
         <style>
           body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 30px; }
-          .card { background: white; max-width: 500px; margin: auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+          .card { background: white; max-width: 550px; margin: auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
           h2 { color: #06c755; margin-top: 0; }
           .status { padding: 8px 12px; margin: 8px 0; border-radius: 6px; }
           .ok { background: #e6f9ed; color: #06c755; }
@@ -100,11 +119,15 @@ function doGet(e) {
       </head>
       <body>
         <div class="card">
-          <h2>LINE Bot 伺服器運作中 (GAS) ✅</h2>
+          <h2>LINE Bot 混合雲服務運作中 ✅</h2>
           <div class="status ${secretSet ? 'ok' : 'warn'}">LINE_CHANNEL_SECRET: ${secretSet ? '已設定' : '未設定'}</div>
           <div class="status ${tokenSet ? 'ok' : 'warn'}">LINE_CHANNEL_ACCESS_TOKEN: ${tokenSet ? '已設定' : '未設定'}</div>
-          <div class="status ${geminiSet ? 'ok' : 'warn'}">GEMINI_API_KEY: ${geminiSet ? '已設定' : '未設定'}</div>
-          <p style="margin-top:20px;font-size:14px;color:#666;">請複製本網址並在 LINE Developers Webhook URL 中貼上。</p>
+          <div class="status ${localSet ? 'ok' : 'warn'}">LOCAL_SERVER_URL (本機通道): ${localSet ? '已設定' : '未設定 (請填入本機 Tunnel 網址)'}</div>
+          <div class="status ok">SPREADSHEET_ID: ${SPREADSHEET_ID}</div>
+          <p style="margin-top:20px;font-size:14px;color:#666;">
+            - 輸入「查 [關鍵字]」：由本機模型聯網回答並附來源。<br>
+            - 輸入其他文字：自動記入 Google 試算表待辦清單。
+          </p>
         </div>
       </body>
     </html>
@@ -113,198 +136,86 @@ function doGet(e) {
 }
 
 /**
- * 驗證 LINE 數位簽章 (HMAC-SHA256)
+ * 轉發查詢至本機模型伺服器
  */
-function verifySignature(bodyString, signature, channelSecret) {
-  const expectedHash = Utilities.computeHmacSha256Signature(bodyString, channelSecret);
-  const expectedSignature = Utilities.base64Encode(expectedHash);
-  return signature === expectedSignature;
-}
-
-/**
- * 即時連網搜尋：透過 Google 即時新聞與時事檢索抓取網路最新資料（100% 免費無額度限制）
- */
-function fetchRealtimeWebData(query) {
-  try {
-    const encodedQuery = encodeURIComponent(query);
-    const feedUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
-    const res = UrlFetchApp.fetch(feedUrl, { muteHttpExceptions: true });
-    if (res.getResponseCode() !== 200) return '';
-
-    const xml = res.getContentText();
-    const document = XmlService.parse(xml);
-    const root = document.getRootElement();
-    const channel = root.getChild('channel');
-    if (!channel) return '';
-
-    const items = channel.getChildren('item');
-    if (!items || items.length === 0) return '';
-
-    let snippets = [];
-    const maxItems = Math.min(items.length, 4);
-    for (let i = 0; i < maxItems; i++) {
-      const item = items[i];
-      const title = item.getChildText('title') || '';
-      const pubDate = item.getChildText('pubDate') || '';
-      if (title) {
-        snippets.push(`- 【最新即時報導】${title} (發布時間: ${pubDate})`);
-      }
-    }
-
-    return snippets.join('\n');
-  } catch (e) {
-    console.warn('即時搜尋檢索失敗: ' + e.toString());
-    return '';
-  }
-}
-
-/**
- * 呼叫 Google Gemini REST API（方案 A：一次取得主回答 + 3 個延伸推薦問題，支援即時連網）
- */
-function callGeminiWithQuickReplies(userMessage, apiKey) {
-  if (!apiKey) {
-    return {
-      reply: '⚠️ 尚未設定 GEMINI_API_KEY，請於 Google Apps Script 的「指令碼屬性」填入 API Key。',
-      followup_questions: []
-    };
+function queryLocalServer(query, localServerUrl) {
+  if (!localServerUrl) {
+    return '⚠️ 尚未設定本機通道網址 (LOCAL_SERVER_URL)。請先在電腦執行 start_local_server.bat 並將網址填入指令碼屬性。';
   }
 
-  // 取得現在時間供防幻覺時間錨定
-  const now = new Date();
-  const currentDate = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy年MM月dd日');
-
-  // 即時連網抓取最新資料
-  const webContext = fetchRealtimeWebData(userMessage);
-  let promptWithWeb = userMessage;
-  if (webContext) {
-    promptWithWeb = `【聯網即時檢索到的最新資料】：\n${webContext}\n\n【使用者提問】：\n${userMessage}`;
-  }
-
-  const systemInstruction = 
-    `你是一個嚴謹、誠實、條理分明且知識豐富的 LINE 智慧助理。今天是 ${currentDate}。\n\n` +
-    `【回答準則】：\n` +
-    `1. 善用你的廣泛知識庫與提問中的即時檢索資料，詳盡、專業地回答使用者的問題。\n` +
-    `2. 【年份與時效處理】：若使用者提問中包含特定年份（例如「2026年 陳文盛教授」），請提供該人物或主題已知的所有確切真實資料（如陳文盛教授的職稱、學術專長、經歷、代表著作等），並客觀說明這是目前已知的資料。除非提問是詢問「尚未發生、無法得知的未來特定事件」（例如誰會得獎、未來比賽比分），否則切勿輕易放棄回答。\n` +
-    `3. 【禁止捏造】：嚴格禁止憑空捏造不存在的人名、數據或事件。如果問題完全超出已知範圍且無任何客觀資料，才說明目前無確切資料。\n` +
-    `4. 一律使用台灣習慣的繁體中文，排版清晰、條理分明，適合手機閱讀。\n\n` +
-    `【輸出格式要求】：\n` +
-    `請務必且只能輸出合法 JSON 格式，不得包含 markdown 語法（例如不要輸出 \`\`\`json 標記）：\n` +
-    `{\n` +
-    `  "reply": "給使用者的完整回答內容（繁體中文、排版清晰易讀）",\n` +
-    `  "followup_questions": ["推薦追問1", "推薦追問2", "推薦追問3"]\n` +
-    `}\n` +
-    `注意：followup_questions 陣列請給出 3 個使用者最可能想繼續追問的問題，每個問題請控制在 15 字以內。`;
+  // 清除結尾的斜線
+  const cleanUrl = localServerUrl.replace(/\/+$/, '');
+  const targetUrl = `${cleanUrl}/search`;
 
   const payload = {
-    contents: [
-      {
-        parts: [{ text: promptWithWeb }]
-      }
-    ],
-    systemInstruction: {
-      parts: [{ text: systemInstruction }]
-    },
-    generationConfig: {
-      temperature: 0.2,
-      responseMimeType: "application/json"
-    }
+    query: query
   };
 
-  // 支援的模型清單（依序嘗試，確保高可用性）
-  const candidateModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
 
-  for (let m = 0; m < candidateModels.length; m++) {
-    const modelName = candidateModels[m];
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-    const options = {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
-
-    try {
-      const response = UrlFetchApp.fetch(apiUrl, options);
-      const responseCode = response.getResponseCode();
-      const responseText = response.getContentText();
-
-      if (responseCode === 200) {
-        const resData = JSON.parse(responseText);
-        const candidates = resData.candidates || [];
-        if (candidates.length > 0 && candidates[0].content && candidates[0].content.parts.length > 0) {
-          const rawJsonText = candidates[0].content.parts[0].text;
-          try {
-            const parsed = JSON.parse(rawJsonText);
-            return {
-              reply: parsed.reply || '沒有內容',
-              followup_questions: Array.isArray(parsed.followup_questions) ? parsed.followup_questions.slice(0, 3) : []
-            };
-          } catch (e) {
-            return {
-              reply: rawJsonText,
-              followup_questions: []
-            };
-          }
-        }
-      } else {
-        console.warn(`[${modelName}] API 回應 HTTP ${responseCode}，嘗試下一個備援模型...`);
-      }
-    } catch (err) {
-      console.warn(`[${modelName}] 連線異常: ` + err.toString());
+  try {
+    const res = UrlFetchApp.fetch(targetUrl, options);
+    const code = res.getResponseCode();
+    if (code === 200) {
+      const data = JSON.parse(res.getContentText());
+      return data.reply || '本機模型未產生回應。';
+    } else {
+      console.warn(`本機伺服器回應 HTTP ${code}: ${res.getContentText()}`);
+      return `⚠️ 本機伺服器處理失敗 (HTTP ${code})，請確認電腦端是否正常運作。`;
     }
+  } catch (err) {
+    console.error('連線本機伺服器失敗: ' + err.toString());
+    return '⚠️ 目前無法連線至您的本機電腦伺服器。\n請確認：\n1. 電腦是否開機並連網\n2. 是否已執行 start_local_server.bat 啟動連線通道';
   }
-
-  return { reply: '❌ AI 服務暫時無法回應，請稍後再試。', followup_questions: [] };
 }
 
 /**
- * 透過 LINE Messaging API 發送回覆 (包含 Quick Reply 按鈕)
+ * 將待辦事項寫入 Google 試算表
  */
-function sendLineReply(replyToken, replyText, followupQuestions, accessToken) {
-  if (!accessToken) {
-    console.warn('⚠️ LINE_CHANNEL_ACCESS_TOKEN 未設定，無法發送回覆');
-    return;
-  }
+function appendTodoToSheet(spreadsheetId, userId, todoContent) {
+  const now = new Date();
+  const timeStr = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss');
 
-  const lineApiUrl = 'https://api.line.me/v2/bot/message/reply';
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    let sheet = ss.getActiveSheet();
 
-  // 建立訊息本體
-  const messageObj = {
-    type: 'text',
-    text: replyText
-  };
-
-  // 若有推薦的後續問題，包裝為 QuickReplyItem
-  if (followupQuestions && followupQuestions.length > 0) {
-    const items = [];
-    for (let i = 0; i < followupQuestions.length; i++) {
-      const q = String(followupQuestions[i]).trim();
-      if (!q) continue;
-
-      // LINE QuickReply label 上限 20 字元
-      const labelText = q.length > 20 ? q.substring(0, 20) : q;
-
-      items.push({
-        type: 'action',
-        action: {
-          type: 'message',
-          label: labelText,
-          text: q
-        }
-      });
+    // 如果是全新空白工作表，自動寫入表頭
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['記錄時間', '傳訊者 ID', '待辦事項內容', '狀態']);
+      sheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#f3f3f3');
     }
 
-    if (items.length > 0) {
-      messageObj.quickReply = {
-        items: items
-      };
-    }
-  }
+    sheet.appendRow([timeStr, userId, todoContent, '待處理']);
+    console.log(`✅ 成功寫入試算表: [${timeStr}] ${todoContent}`);
+    return { success: true, time: timeStr };
 
+  } catch (e) {
+    console.error('寫入試算表失敗: ' + e.toString());
+    return { success: false, time: timeStr };
+  }
+}
+
+/**
+ * 透過 LINE Messaging API 發送單一文字回覆
+ */
+function sendSimpleReply(replyToken, text, accessToken) {
+  if (!accessToken) return;
+
+  const url = 'https://api.line.me/v2/bot/message/reply';
   const payload = {
     replyToken: replyToken,
-    messages: [messageObj]
+    messages: [
+      {
+        type: 'text',
+        text: text
+      }
+    ]
   };
 
   const options = {
@@ -318,14 +229,17 @@ function sendLineReply(replyToken, replyText, followupQuestions, accessToken) {
   };
 
   try {
-    const response = UrlFetchApp.fetch(lineApiUrl, options);
-    const code = response.getResponseCode();
-    if (code !== 200) {
-      console.error(`LINE Reply 失敗 (${code}): ` + response.getContentText());
-    } else {
-      console.log('✅ LINE 訊息與按鈕發送成功');
-    }
-  } catch (err) {
-    console.error('發送 LINE 訊息異常: ' + err.toString());
+    UrlFetchApp.fetch(url, options);
+  } catch (e) {
+    console.error('LINE 發送失敗: ' + e.toString());
   }
+}
+
+/**
+ * 驗證 LINE 數位簽章 (HMAC-SHA256)
+ */
+function verifySignature(bodyString, signature, channelSecret) {
+  const expectedHash = Utilities.computeHmacSha256Signature(bodyString, channelSecret);
+  const expectedSignature = Utilities.base64Encode(expectedHash);
+  return signature === expectedSignature;
 }
