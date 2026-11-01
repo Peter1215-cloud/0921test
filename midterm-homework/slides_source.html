@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>東華校園美食情緒推薦系統 - 專題簡報</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Noto Sans TC', 'Microsoft JhengHei UI', 'Segoe UI', sans-serif;
+    background: #090d16;
+    color: #e2e8f0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .slide {
+    width: 1920px;
+    height: 1080px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+    padding: 70px 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: radial-gradient(circle at 15% 20%, rgba(20, 45, 75, 0.5) 0%, rgba(9, 13, 22, 1) 70%);
+  }
+
+  /* Decorative Background Glows */
+  .glow-1 {
+    position: absolute;
+    top: -150px;
+    right: -150px;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .glow-2 {
+    position: absolute;
+    bottom: -150px;
+    left: 20%;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 239, 125, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Slide Header */
+  .slide-header {
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 2;
+  }
+  .slide-tag {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .slide-title {
+    font-size: 44px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .slide-subtitle {
+    font-size: 20px;
+    color: #94a3b8;
+    margin-top: 8px;
+    font-weight: 400;
+  }
+
+  /* Slide Footer */
+  .slide-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 16px;
+    color: #64748b;
+    position: relative;
+    z-index: 2;
+  }
+  .footer-brand {
+    font-weight: 700;
+    color: #38ef7d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Content Containers */
+  .content-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    flex: 1;
+    position: relative;
+    z-index: 2;
+  }
+  .content-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    flex: 1;
+    position: relative;
+    z-index: 2;
+  }
+  .content-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    flex: 1;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Glass Card */
+  .card {
+    background: rgba(26, 33, 46, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 32px;
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .card-highlight {
+    background: linear-gradient(135deg, rgba(30, 45, 66, 0.8) 0%, rgba(18, 26, 38, 0.9) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+  .card-gold {
+    background: linear-gradient(135deg, rgba(50, 36, 12, 0.8) 0%, rgba(24, 18, 8, 0.9) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+  }
+
+  .card-icon {
+    font-size: 38px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 12px;
+  }
+  .card-desc {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+  .card-list {
+    list-style: none;
+    margin-top: 14px;
+  }
+  .card-list li {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 22px;
+  }
+  .card-list li::before {
+    content: "•";
+    color: #38bdf8;
+    font-size: 22px;
+    position: absolute;
+    left: 4px;
+    top: -4px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+  .badge-blue { background: #1e3a8a; color: #93c5fd; }
+  .badge-green { background: #064e3b; color: #6ee7b7; }
+  .badge-amber { background: #78350f; color: #fde68a; }
+  .badge-purple { background: #4c1d95; color: #d8b4fe; }
+
+  /* Title Slide Specifics */
+  .title-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: radial-gradient(circle at 50% 40%, rgba(25, 45, 75, 0.7) 0%, rgba(9, 13, 22, 1) 75%);
+  }
+  .main-logo {
+    font-size: 72px;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 20px rgba(56, 239, 125, 0.4));
+  }
+  .hero-title {
+    font-size: 64px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff 30%, #38ef7d 70%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+  }
+  .hero-sub {
+    font-size: 26px;
+    color: #94a3b8;
+    max-width: 1100px;
+    margin-bottom: 40px;
+    line-height: 1.5;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 30px;
+    padding: 16px 36px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    font-size: 18px;
+    color: #cbd5e1;
+  }
+  .hero-meta strong {
+    color: #38ef7d;
+  }
+
+  /* Code snippet style */
+  .code-box {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 18px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 15px;
+    color: #e2e8f0;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+  .code-box .keyword { color: #f43f5e; font-weight: bold; }
+  .code-box .func { color: #38bdf8; }
+  .code-box .str { color: #a7f3d0; }
+  .code-box .comment { color: #64748b; font-style: italic; }
+
+</style>
+</head>
+<body>
+
+  <!-- ==================== SLIDE 1: 封面 ==================== -->
+  <div class="slide title-slide">
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <div class="main-logo">🍱 🎓 🌲</div>
+    <div class="slide-tag">AI 課程期中作業專案成果發表</div>
+    <h1 class="hero-title">東華校園美食情緒推薦系統</h1>
+    <p class="hero-sub">融合「心情標籤」、「花蓮即時氣候」與「Google Maps 地理定位」的現代深色桌面完全版推薦軟體</p>
+    <div class="hero-meta">
+      <div>🏫 <strong>學校機構</strong>：國立東華大學 (NDHU)</div>
+      <div>💻 <strong>核心架構</strong>：Python 3.10+ / CustomTkinter GUI</div>
+      <div>📊 <strong>資料規模</strong>：50 家校園與志學街經典美食</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 2: 專案背景與核心痛點 ==================== -->
+  <div class="slide">
+    <div class="glow-1"></div>
+    <div class="slide-header">
+      <div class="slide-tag">PROJECT BACKGROUND & PROBLEM STATEMENT</div>
+      <h2 class="slide-title">🧭 專案緣起：東華人共同的世紀難題</h2>
+      <p class="slide-subtitle">校園佔地 250 公頃，每到用餐時刻，全校師生總是陷入重複的選擇障礙</p>
+    </div>
+
+    <div class="content-grid-3">
+      <div class="card">
+        <div>
+          <div class="card-icon">🗺️</div>
+          <div class="card-title">校地廣大 ╳ 資訊分散</div>
+          <p class="card-desc">東華校地全台第二大，涵蓋後門志學街、校內三大生活館（湖畔、集賢、多容）與前門，新生與一般同學難以即時掌握全盤美食資訊。</p>
+        </div>
+        <ul class="card-list">
+          <li>各館舍學餐分散於南北兩端</li>
+          <li>志學街巷弄隱藏許多老饕名店</li>
+          <li>缺乏整合性的即時導航指南</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="card-icon">🧠</div>
+          <div class="card-title">心理情緒 ╳ 飲食慾望</div>
+          <p class="card-desc">用餐動機與情緒緊密連結！期中週熬夜趕報告渴望高CP值紓壓，心情愉悅時想吃大餐，平常時段則偏好家常懷舊小吃。</p>
+        </div>
+        <ul class="card-list">
+          <li>傳統美食 App 只看店家分類（麵食/快餐）</li>
+          <li>忽略學生當下「心情需求」與「預算痛點」</li>
+          <li>無法精準命中此刻的生理與心理渴望</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="card-icon">🌧️</div>
+          <div class="card-title">花蓮天候 ╳ 外出安全性</div>
+          <p class="card-desc">花蓮東臨太平洋，氣候陰晴不定，傾盆大雨說來就來。大雨天騎機車或單車出校門極度不便且具交通安全風險。</p>
+        </div>
+        <ul class="card-list">
+          <li>雨天迫切需要就近的校內學餐備案</li>
+          <li>傳統搜尋引擎無法根據天氣自適應推播</li>
+          <li>欠缺兼具人文關懷的天候安全提醒機制</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>02 / 08</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 3: 核心功能與產品亮點 ==================== -->
+  <div class="slide">
+    <div class="glow-1"></div>
+    <div class="slide-header">
+      <div class="slide-tag">CORE VALUE & SYSTEM HIGHLIGHTS</div>
+      <h2 class="slide-title">✨ 核心功能：四大創新亮點</h2>
+      <p class="slide-subtitle">打造兼具美感、智慧篩選、命運趣味與實用導航的桌面級完全體驗</p>
+    </div>
+
+    <div class="content-grid-4">
+      <div class="card card-highlight">
+        <div>
+          <div class="card-icon">🚀</div>
+          <div class="card-title">智慧隨選推薦</div>
+          <p class="card-desc">動態選取心情與天氣，演算法雙重比對，超過 3 家時以隨機洗牌機制（<code>random.sample</code>）挑選 3 家最速配的美食卡片。</p>
+        </div>
+        <div class="badge badge-blue">雙條件篩選</div>
+        <div class="badge badge-green">智慧洗牌 3 間</div>
+      </div>
+
+      <div class="card card-gold">
+        <div>
+          <div class="card-icon">🎲</div>
+          <div class="card-title">命運盲盒抽籤</div>
+          <p class="card-desc">徹底打破選擇障礙！完全忽略下拉選單，從 50 家店中單純隨機抽選「僅限 1 家」，並以金黃高亮邊框隆重呈現。</p>
+        </div>
+        <div class="badge badge-amber">一秒拍板</div>
+        <div class="badge badge-amber">專屬金黃大獎</div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="card-icon">🌧️</div>
+          <div class="card-title">下大雨貼心彩蛋</div>
+          <p class="card-desc">當天氣被選定為「下大雨」時，卡片容器頂部自動觸發跳出高亮關懷通知，特別關注與引導同學至校內三大生活館避雨用餐。</p>
+        </div>
+        <div class="badge badge-blue">天候感測彩蛋</div>
+        <div class="badge badge-green">校內安全守護</div>
+      </div>
+
+      <div class="card card-highlight">
+        <div>
+          <div class="card-icon">🗺️</div>
+          <div class="card-title">Google Maps 導航</div>
+          <p class="card-desc">每張卡片附帶獨立導航按鈕，智慧判定校內各大館舍（+東華大學）與校外志學街（+花蓮壽豐），一鍵喚醒瀏覽器精確導航。</p>
+        </div>
+        <div class="badge badge-purple">官方 API 串接</div>
+        <div class="badge badge-blue">校內外關鍵字自適應</div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>03 / 08</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 4: 資料庫與特徵工程 ==================== -->
+  <div class="slide">
+    <div class="glow-2"></div>
+    <div class="slide-header">
+      <div class="slide-tag">DATA ENGINEERING & ARCHITECTURE</div>
+      <h2 class="slide-title">📊 資料庫建置與標籤特徵工程</h2>
+      <p class="slide-subtitle">深入田野調查 50 筆東華校園與志學街數據，建立結構化 CSV 資料庫</p>
+    </div>
+
+    <div class="content-grid-2">
+      <div class="card">
+        <div class="card-title">📁 數據結構設計 (restaurants.csv)</div>
+        <p class="card-desc">以 UTF-8-BOM 編碼標準儲存，保證在 Windows/Excel 環境下解析無亂碼，涵蓋 7 大核心屬性：</p>
+        <ul class="card-list" style="margin-top: 15px;">
+          <li><strong>name (店名)</strong>：如香榭城、大理石廚房、湖畔餐廳、我家螺螄粉</li>
+          <li><strong>type (料理型態)</strong>：便當快餐、早午餐/美式、麵食水餃、校內自助餐</li>
+          <li><strong>mood (複合心情標籤)</strong>：以斜線 <code>/</code> 複合定義，多維度反映情感需求</li>
+          <li><strong>weather (氣候適性)</strong>：出大太陽、陰天/涼爽、下大雨</li>
+          <li><strong>price & location</strong>：價格級距（低、中、中高）與地理分區（志學街、校內）</li>
+          <li><strong>description (特色描寫)</strong>：飽含東華在地生活記憶的精準生動短評</li>
+        </ul>
+      </div>
+
+      <div class="card card-highlight">
+        <div class="card-title">🧩 標籤動態解構器 (Tokenizer)</div>
+        <p class="card-desc">捨棄傳統寫死選項做法，系統啟動時動態解析 CSV 內容，進行去重與正規化：</p>
+        <div class="code-box">
+<span class="comment"># 動態提取 10 大獨立情緒標籤</span>
+<span class="keyword">for</span> r <span class="keyword">in</span> self.restaurants:
+    <span class="keyword">for</span> m <span class="keyword">in</span> r[<span class="str">"mood"</span>].split(<span class="str">"/"</span>):
+        moods_set.add(m.strip())
+<span class="comment"># 萃取出：壓力大、趕報告、追求高CP值、想吃大餐、心情很好、嘴饞、想吃宵夜、心情平淡、懷舊、肚子極餓</span>
+        </div>
+        <div style="margin-top: 20px;">
+          <div class="badge badge-amber">10 種獨立情緒維度</div>
+          <div class="badge badge-blue">3 種天候情境</div>
+          <div class="badge badge-green">完全動態擴充支援</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>04 / 08</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 5: 系統架構與生命週期 ==================== -->
+  <div class="slide">
+    <div class="glow-1"></div>
+    <div class="slide-header">
+      <div class="slide-tag">SYSTEM ARCHITECTURE & UI ENGINE</div>
+      <h2 class="slide-title">🏗️ 系統軟體架構與 UI 生命週期</h2>
+      <p class="slide-subtitle">基於 Python CustomTkinter 框架，採用清晰的階層化模組與無殘影刷新管理</p>
+    </div>
+
+    <div class="content-grid-3">
+      <div class="card">
+        <div class="card-icon">💾</div>
+        <div class="card-title">資料層 (Data Layer)</div>
+        <p class="card-desc"><strong>DataLoader 類別</strong>：專職負責檔案讀取、防呆校驗、多標籤萃取與預載入快取，解耦業務邏輯與資料來源。</p>
+        <div class="code-box" style="font-size: 13px;">
+class DataLoader:
+    def __init__(self):
+        self.load_data()
+        self.extract_tags()
+        </div>
+      </div>
+
+      <div class="card card-highlight">
+        <div class="card-icon">⚙️</div>
+        <div class="card-title">推薦邏輯層 (Engine)</div>
+        <p class="card-desc"><strong>Recommendation Logic</strong>：執行布林標籤匹配、樣本隨機洗牌 (`random.sample`)、盲盒抽取 (`random.choice`) 及 Google 地圖關鍵字後綴判定。</p>
+        <div class="code-box" style="font-size: 13px;">
+is_campus = any(k in name or k in loc 
+    for k in ['校內','湖畔','多容館'])
+suffix = "東華大學" if is_campus ...
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🖥️</div>
+        <div class="card-title">視窗呈現層 (UI/UX)</div>
+        <p class="card-desc"><strong>DongHwaFoodApp</strong>：繼承 <code>ctk.CTk</code>，統一深色配色規範，自適應滾動視圖 (`CTkScrollableFrame`)，並提供完整的視窗重繪生命週期。</p>
+        <div class="code-box" style="font-size: 13px;">
+def _clear_cards_container(self):
+    self.cards_content_frame.destroy()
+    # 徹底銷毀舊 Frame 防止破版
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>05 / 08</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 6: UI/UX 設計與視覺亮點 ==================== -->
+  <div class="slide">
+    <div class="glow-2"></div>
+    <div class="slide-header">
+      <div class="slide-tag">UI/UX DESIGN & INTERACTIVE DETAILS</div>
+      <h2 class="slide-title">🎨 介面視覺與互動細節設計</h2>
+      <p class="slide-subtitle">打造兼顧高對比度、科技感、資訊層級與流暢互動的大學生專屬視窗</p>
+    </div>
+
+    <div class="content-grid-2">
+      <div class="card">
+        <div class="card-title">🖥️ 現代深色沉浸主題 (Modern Dark Mode)</div>
+        <p class="card-desc">全介面遵循深色模式規範，降低夜間趕報告使用時的視覺疲勞：</p>
+        <ul class="card-list" style="margin-top: 15px;">
+          <li><strong>底色調性</strong>：<code>#090d16</code> 與 <code>#1e222d</code> 雙層深灰黑，襯托卡片浮現感</li>
+          <li><strong>主按鈕配色</strong>：
+            <span style="color:#70a1ff;">藍色 <code>#1f538d</code></span>（智慧推薦）╳ 
+            <span style="color:#ff6b6b;">紅色 <code>#c0392b</code></span>（命運盲盒）
+          </li>
+          <li><strong>字型渲染優化</strong>：調用 Windows 原生 <code>Microsoft JhengHei UI</code> 抗鋸齒清晰渲染</li>
+          <li><strong>響應式伸縮容器</strong>：卡片內容過多時自動觸發平滑滾動，杜絕傳統 Tkinter 溢出視窗問題</li>
+        </ul>
+      </div>
+
+      <div class="card card-gold">
+        <div class="card-title">🌟 豐富的資訊徽章與大獎回饋</div>
+        <p class="card-desc">每張美食卡片均具備高度結構化的視覺層級：</p>
+        <div style="background: rgba(0,0,0,0.3); padding: 18px; border-radius: 12px; margin-top: 10px;">
+          <div style="font-size: 20px; font-weight: bold; color: #f1c40f; margin-bottom: 8px;">
+            🎉 命運之神今天推薦你吃：#1 香榭城
+          </div>
+          <div style="margin-bottom: 10px;">
+            <span class="badge badge-blue">🍴 便當快餐</span>
+            <span class="badge badge-green">📍 志學街</span>
+            <span class="badge badge-amber">💰 價位: 低</span>
+          </div>
+          <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5;">
+            東華人永遠的脆皮雞排神店！份量超大又便宜，熬夜趕報告吃這個最紓壓，店內還有飲料無限暢飲。
+          </p>
+          <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: #8892b0;">💭 壓力大/趕報告  |  🌦️ 下大雨</span>
+            <span style="background: #1a73e8; color: white; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: bold;">
+              🗺️ 開啟 Google Maps 導航
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>06 / 08</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 7: 工程挑戰與關鍵排錯 ==================== -->
+  <div class="slide">
+    <div class="glow-1"></div>
+    <div class="slide-header">
+      <div class="slide-tag">ENGINEERING CHALLENGES & TROUBLESHOOTING</div>
+      <h2 class="slide-title">🛠️ 開發實戰：工程挑戰與排錯經驗</h2>
+      <p class="slide-subtitle">跨越 Windows 編碼陷阱、動態佈局更新與例外防禦機制的實務解法</p>
+    </div>
+
+    <div class="content-grid-3">
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">閃退危機：字碼頁亂碼</div>
+        <p class="card-desc"><strong>問題現象</strong>：雙擊捷徑時終端視窗一閃即逝，程式無法停留。<br><br>
+        <strong>原因排查</strong>：Windows WScript.Shell 建立捷徑時，中文檔名受 ANSI 字碼頁干擾轉換為亂碼路徑；舊批次檔帶有 <code>exit</code> 導致秒退。<br><br>
+        <strong>解決方案</strong>：全面改採純 ASCII <code>run_app.bat</code>，捷徑直接綁定 Python 直譯器，並加入 <code>pause</code> 恆久保持可見。</p>
+      </div>
+
+      <div class="card card-highlight">
+        <div class="card-icon">🔄</div>
+        <div class="card-title">佈局殘留：Frame 銷毀機制</div>
+        <p class="card-desc"><strong>問題現象</strong>：多次點擊推薦或盲盒時，舊卡片與新卡片在容器內重疊破版。<br><br>
+        <strong>技術根因</strong>：Tkinter Pack 管理器若未主動銷毀舊 Child Frame，會持續累積幾何計算快取。<br><br>
+        <strong>解決方案</strong>：設計 <code>_clear_cards_container()</code>，先對容器內所有元件調用 <code>destroy()</code> 釋放記憶體後，再重新生成乾淨畫布。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🛡️</div>
+        <div class="card-title">強健防禦：全域崩潰保護</div>
+        <p class="card-desc"><strong>工程規範</strong>：防止未預期錯誤造成使用者體驗中斷。<br><br>
+        <strong>實作防護</strong>：在程式最外層注入 <code>try-except</code> 捕捉所有 Exception，除了自動保存 <code>crash_report.log</code> 外，自動彈出原生 <code>messagebox.showerror</code> 視窗，提供清晰排錯指引。</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>07 / 08</div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 8: 專案總結與未來展望 ==================== -->
+  <div class="slide">
+    <div class="glow-2"></div>
+    <div class="slide-header">
+      <div class="slide-tag">PROJECT CONCLUSION & FUTURE ROADMAP</div>
+      <h2 class="slide-title">🚀 成果驗收與未來 AI 演進藍圖</h2>
+      <p class="slide-subtitle">專案現已全數封裝並同步至 GitHub，具備高度可擴展性與實用價值</p>
+    </div>
+
+    <div class="content-grid-2">
+      <div class="card">
+        <div class="card-title">📦 期中作業完整交付成果</div>
+        <p class="card-desc">成功在 GitHub (<code>Peter1215-cloud/0921test</code>) 的 <code>midterm-homework/</code> 資料夾完成全套交付：</p>
+        <ul class="card-list" style="margin-top: 15px;">
+          <li>✅ <strong><code>gui_app.py</code></strong>：580 行完整模組化 GUI 主程式</li>
+          <li>✅ <strong><code>restaurants.csv</code></strong>：50 家東華周邊精緻美食資料庫</li>
+          <li>✅ <strong><code>run_app.bat</code></strong>：一鍵防閃退 Windows 啟動檔</li>
+          <li>✅ <strong><code>requirements.txt</code> & <code>README.md</code></strong>：標準開源專案文件</li>
+          <li>✅ <strong>本機 Windows 桌面捷徑</strong>：完成路徑修復，隨按即用</li>
+        </ul>
+      </div>
+
+      <div class="card card-highlight">
+        <div class="card-title">🔮 未來擴充方向 (AI Evolution)</div>
+        <p class="card-desc">本系統具備良好的擴充介面，後續可持續升級為智慧校園生活助理：</p>
+        <ul class="card-list" style="margin-top: 15px;">
+          <li>🧠 <strong>LLM 語意情緒分析 (Gemini API)</strong>：允許使用者輸入任意一句話（如「剛被微積分電爆」），由 LLM 自動推論情緒標籤並推薦美食。</li>
+          <li>🌦️ <strong>氣象署 API 即時連線</strong>：自動取得壽豐鄉即時氣溫與降雨機率，免手動選擇天氣。</li>
+          <li>📈 <strong>用戶點擊回饋與推薦權重</strong>：累積學生抽籤與導航次數，利用協同過濾演算法生成個人化熱門排行榜。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div class="footer-brand">東華美食推薦系統 | 專案簡報</div>
+      <div>08 / 08 (完) 謝謝聆聽！Q & A</div>
+    </div>
+  </div>
+
+</body>
+</html>
